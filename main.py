@@ -17,6 +17,21 @@ from typing_extensions import List, TypedDict
 
 from dotenv import load_dotenv
 load_dotenv()
+ 
+FILE_PATH = os.getenv('FILE_PATH')
+
+def load_documents():
+    loader = PyPDFLoader(FILE_PATH)
+    pages = loader.load_and_split()
+    return pages
+
+def split_documents(documents: list[Document]):
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,  # chunk size (characters)
+        chunk_overlap=200,  # chunk overlap (characters)
+        add_start_index=True,  # track index in original document
+    )
+    return text_splitter.split_documents(documents)
 
 # Ensure USER_AGENT is set
 if 'USER_AGENT' not in os.environ:
@@ -34,13 +49,9 @@ embeddings = VertexAIEmbeddings(model="text-embedding-004")
 vector_store = InMemoryVectorStore(embeddings)
 
 # Load and chunk contents of the blog
-file_path = "./documents/CadQuery Cheatsheet.pdf"
-loader = PyPDFLoader(file_path)
-pages = []
-for page in loader.load():
-    pages.append(page)
-
-vector_store = InMemoryVectorStore.from_documents(pages, embeddings)
+pages = load_documents()
+chunks = split_documents(pages)
+vector_store = InMemoryVectorStore.from_documents(chunks, embeddings)
 docs = vector_store.similarity_search("what is a 3d construction primitive function", k=5)
 
 # Print the top 5 most similar documents
