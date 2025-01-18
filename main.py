@@ -12,6 +12,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langgraph.graph import START, StateGraph
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.messages import HumanMessage
+from langgraph.prebuilt import create_react_agent
 
 from typing_extensions import List, TypedDict
 
@@ -41,10 +42,10 @@ for page in loader.load():
     pages.append(page)
 
 vector_store = InMemoryVectorStore.from_documents(pages, embeddings)
-docs = vector_store.similarity_search("what is a 3d construction primitive function", k=5)
+docsTool = vector_store.similarity_search("what is a 3d construction primitive function", k=5)
 
 # Print the top 5 most similar documents
-for doc in docs:
+for doc in docsTool:
     print(f'Page {doc.metadata["page"]}: {doc.page_content[:300]}\n')
 
 # Tavily search
@@ -54,10 +55,9 @@ searchTool = TavilySearchResults(query="what is a 3d construction primitive func
 tools = [searchTool]
 
 # Invoke the tools before chatting with LLM
-model_tools = model.bind_tools(tools)
+agent_executor = create_react_agent(model, tools)
 
 # Chat with LLM
-response = model.invoke([HumanMessage(content="what are you capable of?")])
+response = agent_executor.invoke({"messages": [HumanMessage(content="what's the weather in sf")]})
 
-print(f"ContentString: {response.content}")
-print(f"ToolCalls: {response.tool_calls}")
+print(response["messages"])
