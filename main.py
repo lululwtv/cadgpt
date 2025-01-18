@@ -4,7 +4,6 @@ import getpass
 
 from langchain_openai import ChatOpenAI
 from langchain_google_vertexai import ChatVertexAI, VertexAIEmbeddings
-from langchain_core.vectorstores import InMemoryVectorStore
 from langchain import hub
 from langchain_community.document_loaders import WebBaseLoader, PyPDFLoader
 from langchain_core.documents import Document
@@ -15,49 +14,81 @@ from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import create_react_agent
 
 from typing_extensions import List, TypedDict
-
+from langchain_chroma import Chroma
+import chromadb
+from langchain.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
+from embeddings import get_embedding_function
+
 load_dotenv()
+CHROMA_COLLECTION = os.getenv('CHROMA_COLLECTION')
+FILE_PATH = os.getenv('FILE_PATH')
+PROMPT_TEMPLATE = """
+Answer the question based only on the following context:
+
+{context}
+
+---
+
+Answer the question based on the above context: {question}
+"""
 
 # Ensure USER_AGENT is set
 if 'USER_AGENT' not in os.environ:
     os.environ['USER_AGENT'] = "cadgpt"
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./credentials.json"
-# os.environ["TAVILY_API_KEY"] = os.getenv("TAVILY_API_KEY")
 
-# Ensure your VertexAI credentials are configured
-model = ChatVertexAI(model="gemini-1.5-flash")
+def main():
+    query_text = "How to create a cube"
+    query_rag(query_text)
 
-# Initialize VertexAI Embeddings
-embeddings = VertexAIEmbeddings(model="text-embedding-004")
+def query_rag(query_text:str):
+    # Load Vector Store from Local ChromaDB
+    persistent_client = chromadb.PersistentClient()
+    vector_store = Chroma(
+            client=persistent_client,
+            collection_name=CHROMA_COLLECTION,
+            embedding_function=get_embedding_function()
+        )
+    # Search the DB
+    results = vector_store.similarity_search(query_text,k=2)
+    context_text = ""
 
-# Create an in-memory vector store
-vector_store = InMemoryVectorStore(embeddings)
+    for chunk in results:
+        context_text = context_text + "\n\n---\n\n" + chunk.page_content
 
-# Load and chunk contents of the blog
-file_path = "./documents/CadQuery Cheatsheet.pdf"
-loader = PyPDFLoader(file_path)
-pages = []
-for page in loader.load():
-    pages.append(page)
+    prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+    prompt = prompt_template.format(context=context_text, question=query_text)
+    # print(prompt)
 
-vector_store = InMemoryVectorStore.from_documents(pages, embeddings)
-docsTool = vector_store.similarity_search("what is a 3d construction primitive function", k=5)
+    # Send prompt into model
+    model = ChatVertexAI(model="gemini-1.5-flash")
+    response_text = model.invoke(prompt)
 
-# Print the top 5 most similar documents
-for doc in docsTool:
-    print(f'Page {doc.metadata["page"]}: {doc.page_content[:300]}\n')
+    # Print Model Response
+    sources = [chunk.metadata.get("id", None) for chunk in results]
+    formatted_response = f"\n\n\033[32mResponse: {response_text.content}\033[0m\n\nSources: {sources}\n\nUsage Metadata: {response_text.usage_metadata}"
+    print(formatted_response)
 
-# Tavily search
-searchTool = TavilySearchResults(query="what is a 3d construction primitive function")
 
-# Create toolset
-tools = [searchTool]
+if __name__ == "__main__":
+    main()
 
-# Invoke the tools before chatting with LLM
-agent_executor = create_react_agent(model, tools)
+# # Print the top 5 most similar documents
+# for doc in docs:
+#     print(f'Page {doc.metadata["page"]}: {doc.page_content[:300]}\n')
 
-# Chat with LLM
-response = agent_executor.invoke({"messages": [HumanMessage(content="what's the weather in sf")]})
+# # Tavily search
+# searchTool = TavilySearchResults(query="what is a 3d construction primitive function")
 
-print(response["messages"])
+# # Create toolset
+# tools = [searchTool]
+
+# # Invoke the tools before chatting with LLM
+# model_tools = model.bind_tools(tools)
+
+# # Chat with LLM
+# response = model.invoke([HumanMessage(content="what are you capable of?")])
+
+# print(f"ContentString: {response.content}")
+# print(f"ToolCalls: {response.tool_calls}")
