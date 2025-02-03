@@ -1,6 +1,7 @@
 import bs4
 import os
 import getpass
+import logging
 
 from langchain_openai import ChatOpenAI
 from langchain_google_vertexai import ChatVertexAI, VertexAIEmbeddings
@@ -24,7 +25,7 @@ load_dotenv()
 CHROMA_COLLECTION = os.getenv('CHROMA_COLLECTION')
 FILE_PATH = os.getenv('FILE_PATH')
 PROMPT_TEMPLATE = """
-Answer the question based only on the following context:
+Answer the question based only on the following context and provide only code in your response:
 
 {context}
 
@@ -38,37 +39,47 @@ if 'USER_AGENT' not in os.environ:
     os.environ['USER_AGENT'] = "cadgpt"
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./credentials.json"
 
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+
 def main():
-    query_text = "How to create a cube"
+    query_text = "make a size #8 nut that's 3 inches in diameter and 5inches long"
     query_rag(query_text)
 
 def query_rag(query_text:str):
-    # Load Vector Store from Local ChromaDB
-    persistent_client = chromadb.PersistentClient()
-    vector_store = Chroma(
-            client=persistent_client,
-            collection_name=CHROMA_COLLECTION,
-            embedding_function=get_embedding_function()
-        )
-    # Search the DB
-    results = vector_store.similarity_search(query_text,k=2)
-    context_text = ""
+    try:
+        # Load Vector Store from Local ChromaDB
+        persistent_client = chromadb.PersistentClient()
+        vector_store = Chroma(
+                client=persistent_client,
+                collection_name=CHROMA_COLLECTION,
+                embedding_function=get_embedding_function()
+            )
+        # Search the DB
+        results = vector_store.similarity_search(query_text,k=2)
+        context_text = ""
 
-    for chunk in results:
-        context_text = context_text + "\n\n---\n\n" + chunk.page_content
+        for chunk in results:
+            context_text += "\n\n---\n\n" + chunk.page_content
 
-    prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-    prompt = prompt_template.format(context=context_text, question=query_text)
-    # print(prompt)
+        prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+        prompt = prompt_template.format(context=context_text, question=query_text)
+        # logging.info(prompt)
 
-    # Send prompt into model
-    model = ChatVertexAI(model="gemini-1.5-flash")
-    response_text = model.invoke(prompt)
+        # Send prompt into model
+        model = ChatVertexAI(model="gemini-1.5-flash")
+        response_text = model.invoke(prompt)
 
-    # Print Model Response
-    sources = [chunk.metadata.get("id", None) for chunk in results]
-    formatted_response = f"\n\n\033[32mResponse: {response_text.content}\033[0m\n\nSources: {sources}\n\nUsage Metadata: {response_text.usage_metadata}"
-    print(formatted_response)
+        # Filter the response to ensure it contains only code
+        code_response = response_text.content.strip()
+
+        # Print Model Response
+        sources = [chunk.metadata.get("id", None) for chunk in results]
+        formatted_response = f"\n\n\033[32mResponse: {code_response}\033[0m\n\nSources: {sources}\n\nUsage Metadata: {response_text.usage_metadata}"
+        logging.info(formatted_response)
+
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
 
 
 if __name__ == "__main__":
