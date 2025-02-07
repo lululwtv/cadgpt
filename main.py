@@ -55,7 +55,8 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./credentials.json"
 logging.basicConfig(level=logging.INFO)
 
 def main():
-    query_text = "create a hexagonal nut with a 1/2 inch diameter"
+    query_text = """make a hexagonal nut with 1/4 inch diameter
+    """
     query_rag(query_text)
 
 def query_rag(query_text:str):
@@ -92,7 +93,8 @@ def query_rag(query_text:str):
         ---
 
         If the user asks for a hexagonal nut, you can reuse the code from the second example and modify it to create a 
-        hexagon instead of a circle.
+        hexagon instead of a circle. Same with other shapes like squares, triangles, etc. You can also modify the dimensions
+        to match the user's request.
         """
 
         # Rerank the results by score
