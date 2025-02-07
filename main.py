@@ -25,14 +25,26 @@ load_dotenv()
 CHROMA_COLLECTION = os.getenv('CHROMA_COLLECTION')
 FILE_PATH = os.getenv('FILE_PATH')
 PROMPT_TEMPLATE = """
-Answer the question based only on the following context and provide only code in your response:
+You are an expert in CadQuery and Python. Given the following context, generate **only** valid, functional CadQuery code that follows best practices. Ensure the code does not contain syntax errors and is executable.
 
+Context:
 {context}
 
 ---
 
-Answer the question based on the above context: {question}
+Task: Generate CadQuery code for the following request:
+{question}
+
+**Guidelines:**
+- Use `cq.Workplane` properly.
+- Ensure all operations are valid and logically ordered.
+- Include necessary imports (`import cadquery as cq`).
+- Do not include explanations, only return valid Python code.
+- If unsure, return the best possible attempt.
+
+Output only the CadQuery code:
 """
+
 
 # Ensure USER_AGENT is set
 if 'USER_AGENT' not in os.environ:
@@ -43,7 +55,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./credentials.json"
 logging.basicConfig(level=logging.INFO)
 
 def main():
-    query_text = "make a size #8 nut that's 3 inches in diameter and 5inches long"
+    query_text = "create a hexagonal nut with a 1/2 inch diameter"
     query_rag(query_text)
 
 def query_rag(query_text:str):
@@ -56,11 +68,38 @@ def query_rag(query_text:str):
                 embedding_function=get_embedding_function()
             )
         # Search the DB
-        results = vector_store.similarity_search(query_text,k=2)
+        results = vector_store.similarity_search_with_score(query_text, k=5)
+
         context_text = ""
 
+        context_text += """
+        ---
+        Example 1:
+        Request: Create a cylinder with a 1-inch diameter and 2-inch height.
+        Output:
+        import cadquery as cq
+        result = cq.Workplane("XY").circle(0.5).extrude(2)
+        ---
+
+        Example 2:
+        Request: Create a nut with a 1/2 inch diameter.
+        Output:
+        import cadquery as cq
+        diameter = 0.5
+        height = 0.25
+        result = cq.Workplane("XY").circle(diameter / 2).extrude(height)
+        .faces("<Z").workplane().hole(diameter / 4)
+        ---
+
+        If the user asks for a hexagonal nut, you can reuse the code from the second example and modify it to create a 
+        hexagon instead of a circle.
+        """
+
+        # Rerank the results by score
+        results = sorted(results, key=lambda x: x[1], reverse=True)
+
         for chunk in results:
-            context_text += "\n\n---\n\n" + chunk.page_content
+            context_text += "\n\n---\n\n" + chunk[0].page_content
 
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
         prompt = prompt_template.format(context=context_text, question=query_text)
@@ -74,7 +113,7 @@ def query_rag(query_text:str):
         code_response = response_text.content.strip()
 
         # Print Model Response
-        sources = [chunk.metadata.get("id", None) for chunk in results]
+        sources = [chunk[0].metadata.get("id", None) for chunk in results]
         formatted_response = f"\n\n\033[32mResponse: {code_response}\033[0m\n\nSources: {sources}\n\nUsage Metadata: {response_text.usage_metadata}"
         logging.info(formatted_response)
 
@@ -84,22 +123,3 @@ def query_rag(query_text:str):
 
 if __name__ == "__main__":
     main()
-
-# # Print the top 5 most similar documents
-# for doc in docs:
-#     print(f'Page {doc.metadata["page"]}: {doc.page_content[:300]}\n')
-
-# # Tavily search
-# searchTool = TavilySearchResults(query="what is a 3d construction primitive function")
-
-# # Create toolset
-# tools = [searchTool]
-
-# # Invoke the tools before chatting with LLM
-# model_tools = model.bind_tools(tools)
-
-# # Chat with LLM
-# response = model.invoke([HumanMessage(content="what are you capable of?")])
-
-# print(f"ContentString: {response.content}")
-# print(f"ToolCalls: {response.tool_calls}")
