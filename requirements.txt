@@ -31,4 +31,4 @@ langsmith
 openai
 chromadb
 pypdf
-
+nbformat==5.10.4

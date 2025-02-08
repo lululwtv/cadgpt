@@ -21,6 +21,8 @@ from langchain.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 from embeddings import get_embedding_function
 
+import nbformat as nbf
+
 load_dotenv()
 CHROMA_COLLECTION = os.getenv('CHROMA_COLLECTION')
 FILE_PATH = os.getenv('FILE_PATH')
@@ -128,6 +130,21 @@ def query_rag(query_text: str):
         sources = [chunk[0].metadata.get("id", None) for chunk in results]
         formatted_response = f"\n\n\033[32mResponse: {code_response}\033[0m\n\nSources: {sources}]"
         logging.info(formatted_response)
+
+        # Write formatted response into jupyter notebook file
+        notebook_filename = "result.ipynb"
+        code_response_py = code_response.replace("```python","").replace("```","").strip()
+        with open(notebook_filename, "r") as f:
+            nb = nbf.read(f, as_version=4)
+        new_code = code_response_py+"\ndisplay(result)"
+        new_code_cell = nbf.v4.new_code_cell(new_code)
+        if "id" in new_code_cell:
+            del new_code_cell["id"]
+        nb.cells.append(new_code_cell)
+        with open(notebook_filename, "w") as f:
+            nbf.write(nb, f)
+
+
 
     except Exception as e:
         logging.error(f"An error occurred: {e}")
