@@ -135,7 +135,7 @@ def query_rag(query_text: str):
         notebook_filename = "result.ipynb"
         code_response_py = code_response.replace("```python","").replace("```","").strip()
         with open(notebook_filename, "r") as f:
-            nb = nbf.read(f, as_version=4)
+                    nb = nbf.read(f, as_version=4)
         new_code = code_response_py+"\ndisplay(result)"
         new_code_cell = nbf.v4.new_code_cell(new_code)
         if "id" in new_code_cell:
