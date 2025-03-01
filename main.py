@@ -3,7 +3,7 @@ import os
 import getpass
 import logging
 
-import openai
+from openai import OpenAI
 from langchain_google_vertexai import ChatVertexAI, VertexAIEmbeddings
 from langchain import hub
 from langchain_community.document_loaders import WebBaseLoader, PyPDFLoader
@@ -57,10 +57,12 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./credentials.json"
 logging.basicConfig(level=logging.INFO)
 
 # Set up OpenAI API key
-openai.api_key = OPENAI_API_KEY
+OpenAI.api_key = OPENAI_API_KEY
+deepseek_client = OpenAI(api_key="DEEPSEEK_API_KEY", base_url="https://api.deepseek.com")
 
 def main():
-    query_text = """make a hexagonal nut with 1/4 inch diameter
+    query_text = """
+    Generate me a chess pawn piece, 5cm in height
     """
     query_rag(query_text)
 
@@ -110,20 +112,26 @@ def query_rag(query_text: str):
         # logging.info(prompt)
 
         # Send prompt to OpenAI API
-        response = openai.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "You are an expert in CadQuery and Python."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=150,
-            n=1,
-            stop=None,
-            temperature=0.7,
-        )
+        # response = deepseek_client.chat.completions.create(
+        #     model="deepseek-reasoner",
+        #     messages=[
+        #         {"role": "system", "content": "You are an expert in CadQuery and Python."},
+        #         {"role": "user", "content": prompt}
+        #     ],
+        #     max_tokens=150,
+        #     n=1,
+        #     stop=None,
+        #     temperature=0.7,
+        #     stream=False
+        # )
+
+        # Send Prompt into Model (GEMINI)
+        model = ChatVertexAI(model="gemini-1.5-flash")
+        response = model.invoke(prompt)
 
         # Filter the response to ensure it contains only code
-        code_response = response.choices[0].message.content.strip()
+        code_response = response.content.strip()
+        # code_response = response.choices[0].message.content.strip()
 
 
         # Print Model Response
@@ -136,7 +144,7 @@ def query_rag(query_text: str):
         code_response_py = code_response.replace("```python","").replace("```","").strip()
         with open(notebook_filename, "r") as f:
                     nb = nbf.read(f, as_version=4)
-        new_code = code_response_py+"\ndisplay(result)"
+        new_code = code_response_py+"\n\ndisplay(result)"
         new_code_cell = nbf.v4.new_code_cell(new_code)
         if "id" in new_code_cell:
             del new_code_cell["id"]
