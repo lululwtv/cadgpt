@@ -62,7 +62,7 @@ deepseek_client = OpenAI(api_key="DEEPSEEK_API_KEY", base_url="https://api.deeps
 
 def main():
     query_text = """
-    Generate me a chess pawn piece, 5cm in height
+    make a hexagonal nut with 1/4 inch diameter and a thread of 1/8 inch
     """
     query_rag(query_text)
 
