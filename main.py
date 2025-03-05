@@ -60,7 +60,8 @@ logging.basicConfig(level=logging.INFO)
 openai.api_key = OPENAI_API_KEY
 
 def main():
-    query_text = """make a hexagonal nut with 1/4 inch diameter
+    query_text = """
+    make a hexagonal nut with 1/4 inch diameter and a thread of 1/8 inch
     """
     query_rag(query_text)
 

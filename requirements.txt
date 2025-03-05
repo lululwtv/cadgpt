@@ -1,6 +1,8 @@
 boto3
 bs4
+cadquery
 executing
+pdfplumber
 fastapi
 google-ai-generativelanguage
 google-api-core
