@@ -9,6 +9,8 @@ from langchain_chroma import Chroma
 import chromadb
 from embeddings import get_embedding_function
 from dotenv import load_dotenv
+import re
+
 
 load_dotenv()
 
@@ -88,8 +90,6 @@ def split_documents(documents: list[Document]):
             code_chunks.extend(code_splitter.split_documents([code_doc]))
     
     return code_chunks, desc_chunks
-
-import re
 
 def extract_code_blocks(text):
     code_blocks = []
