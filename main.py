@@ -24,7 +24,7 @@ from embeddings import get_embedding_function
 import nbformat as nbf
 
 load_dotenv()
-CHROMA_COLLECTION = os.getenv('CHROMA_COLLECTION')
+CHROMA_COLLECTION = os.getenv('CHROMA_COLLECTION_DESC')
 FILE_PATH = os.getenv('FILE_PATH')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 PROMPT_TEMPLATE = """
@@ -57,8 +57,8 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./credentials.json"
 logging.basicConfig(level=logging.INFO)
 
 # Set up OpenAI API key
-OpenAI.api_key = OPENAI_API_KEY
-deepseek_client = OpenAI(api_key="DEEPSEEK_API_KEY", base_url="https://api.deepseek.com")
+# OpenAI.api_key = OPENAI_API_KEY
+# deepseek_client = OpenAI(api_key="DEEPSEEK_API_KEY", base_url="https://api.deepseek.com")
 
 def main():
     query_text = """
