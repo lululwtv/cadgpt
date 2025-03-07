@@ -24,6 +24,7 @@ from embeddings import get_embedding_function
 import nbformat as nbf
 
 load_dotenv()
+CHROMA_PATH = os.getenv('CHROMA_PATH')
 CHROMA_COLLECTION = os.getenv('CHROMA_COLLECTION_DESC')
 FILE_PATH = os.getenv('FILE_PATH')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
@@ -62,22 +63,21 @@ logging.basicConfig(level=logging.INFO)
 
 def main():
     query_text = """
-    make a hexagonal nut with 1/4 inch diameter and a thread of 1/8 inch
+    produce me a simple hexagonal tube that is 5cm long and 5cm in radius.
     """
     query_rag(query_text)
 
 def query_rag(query_text: str):
     try:
         # Load Vector Store from Local ChromaDB
-        persistent_client = chromadb.PersistentClient()
         vector_store = Chroma(
-            client=persistent_client,
+            persist_directory=CHROMA_PATH,
             collection_name=CHROMA_COLLECTION,
             embedding_function=get_embedding_function()
         )
+        
         # Search the DB
         results = vector_store.similarity_search_with_score(query_text, k=5)
-
         context_text = ""
 
         context_text += """
@@ -140,11 +140,11 @@ def query_rag(query_text: str):
         logging.info(formatted_response)
 
         # Write formatted response into jupyter notebook file
-        notebook_filename = "result.ipynb"
+        notebook_filename = "query/result.ipynb"
         code_response_py = code_response.replace("```python","").replace("```","").strip()
         with open(notebook_filename, "r") as f:
                     nb = nbf.read(f, as_version=4)
-        new_code = code_response_py+"\n\ndisplay(result)"
+        new_code = "###"+query_text.replace("\n","")+"\n"+code_response_py+"\n\ndisplay(result)"
         new_code_cell = nbf.v4.new_code_cell(new_code)
         if "id" in new_code_cell:
             del new_code_cell["id"]

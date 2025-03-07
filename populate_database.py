@@ -16,7 +16,7 @@ load_dotenv()
 
 
 # FILE_PATH = os.getenv('FILE_PATH')
-FILE_PATH = "./documents/Edi-Liberato.md"
+FILE_PATH = "./documents/cadquery-stable.pdf"
 CHROMA_COLLECTION_CODE = os.getenv('CHROMA_COLLECTION_CODE')
 CHROMA_COLLECTION_DESC = os.getenv('CHROMA_COLLECTION_DESC')
 CHROMA_PATH = os.getenv('CHROMA_PATH')
