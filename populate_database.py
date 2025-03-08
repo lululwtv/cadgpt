@@ -10,7 +10,7 @@ import chromadb
 from embeddings import get_embedding_function
 from dotenv import load_dotenv
 import re
-
+import fitz
 
 load_dotenv()
 
@@ -45,6 +45,17 @@ def main():
     add_to_chroma(code_chunks, CHROMA_COLLECTION_CODE)
     add_to_chroma(desc_chunks, CHROMA_COLLECTION_DESC)
 
+def extract_text_with_pymupdf(file_path):
+    doc = fitz.open(file_path)  # Open the PDF
+    pages = []
+
+    for page_num in range(len(doc)):
+        text = doc[page_num].get_text("text")  # Extract text preserving layout
+        if text:
+            pages.append(Document(page_content=text, metadata={"page": page_num + 1, "source": file_path}))
+
+    return pages
+
 def load_documents(file_path):
     file_path = file_path.strip("'\"")
     print("File path is:", file_path )
@@ -53,13 +64,15 @@ def load_documents(file_path):
             content = file.read()
             return [Document(page_content=content, metadata={"source": file_path})]
     elif file_path.endswith('.pdf'):
-        with pdfplumber.open(file_path) as pdf:
-            pages = []
-            for page in pdf.pages:
-                text = page.extract_text()
-                if text:
-                    pages.append(Document(page_content=text, metadata={"page": page.page_number, "source": file_path}))
-            return pages
+        pages = extract_text_with_pymupdf(file_path)
+        return pages
+        # with pdfplumber.open(file_path) as pdf:
+        #     pages = []
+        #     for page in pdf.pages:
+        #         text = page.extract_text()
+        #         if text:
+        #             pages.append(Document(page_content=text, metadata={"page": page.page_number, "source": file_path}))
+        #     return pages
     else:
         raise ValueError("Unsupported file format. Only .md and .pdf are supported.")
 
