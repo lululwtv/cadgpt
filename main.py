@@ -79,7 +79,7 @@ def query_rag(query_text: str):
         )
         
         # Search the DB
-        results = vector_store.similarity_search_with_score(query_text, k=10)
+        results = vector_store.similarity_search_with_score(query_text, k=3)
         context_text = ""
 
         context_text += """

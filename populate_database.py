@@ -2,7 +2,6 @@ import argparse
 import os
 import shutil
 import re
-import pdfplumber
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
 from langchain_chroma import Chroma
@@ -89,17 +88,18 @@ def load_documents(directory_path):
     supported_extensions = ['.md', '.pdf', '.py']
     documents = []
 
-    for filename in os.listdir(directory_path):
-        file_path = os.path.join(directory_path, filename)
-        if os.path.isfile(file_path) and any(filename.endswith(ext) for ext in supported_extensions):
-            print("Loading file:", file_path)
-            if filename.endswith('.md') or filename.endswith('.py'):
-                with open(file_path, 'r') as file:
-                    content = file.read()
-                    documents.append(Document(page_content=content, metadata={"source": file_path}))
-            elif filename.endswith('.pdf'):
-                pages = extract_and_merge_blocks(file_path)
-                documents.extend(pages)
+    for root, dirs, files in os.walk(directory_path):
+        for filename in files:
+            file_path = os.path.join(root, filename)
+            if os.path.isfile(file_path) and any(filename.endswith(ext) for ext in supported_extensions):
+                print("Loading file:", file_path)
+                if filename.endswith('.md') or filename.endswith('.py'):
+                    with open(file_path, 'r') as file:
+                        content = file.read()
+                        documents.append(Document(page_content=content, metadata={"source": file_path}))
+                elif filename.endswith('.pdf'):
+                    pages = extract_and_merge_blocks(file_path)
+                    documents.extend(pages)
     
     if not documents:
         raise ValueError("No supported documents found in the directory. Only .md, .pdf, and .py are supported.")

@@ -27,8 +27,6 @@ langchain-together
 langchainhub
 langdetect
 langgraph
-langgraph-checkpoint-
-InstructorEmbedding==1.0.1
 openai
 chromadb
 pypdf
