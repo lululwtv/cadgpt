@@ -16,7 +16,7 @@ load_dotenv()
 
 
 # FILE_PATH = os.getenv('FILE_PATH')
-FILE_PATH = "./documents/cadquery-stable.pdf"
+FILE_PATH = "./documents/"
 CHROMA_COLLECTION_CODE = os.getenv('CHROMA_COLLECTION_CODE')
 CHROMA_COLLECTION_DESC = os.getenv('CHROMA_COLLECTION_DESC')
 CHROMA_PATH = os.getenv('CHROMA_PATH')
@@ -36,10 +36,11 @@ def main():
         clear_database()
     
     # Load documents
+    print(f"File path is: {FILE_PATH}")
     pages = load_documents(FILE_PATH)
     
     # Split documents into code and descriptions
-    split_docs = split_with_overlap(pages)
+    split_docs = split_with_overlap(pages, 1000, 200)
     
     # Add to Chroma
     add_to_chroma(split_docs, CHROMA_COLLECTION_DESC)
@@ -84,36 +85,56 @@ def is_code_block(text):
     """Detects if a text block is a code block (fenced or indented)."""
     return bool(re.match(r"(?s)(```.*?```|(?:^\s{4}.*(?:\n|\r))+)", text))
 
-def load_documents(file_path):
-    file_path = file_path.strip("'\"")
-    print("File path is:", file_path )
-    if file_path.endswith('.md'):
-        with open(file_path, 'r') as file:
-            content = file.read()
-            return [Document(page_content=content, metadata={"source": file_path})]
-    elif file_path.endswith('.pdf'):
-        pages = extract_and_merge_blocks(file_path)
-        return pages
-        # with pdfplumber.open(file_path) as pdf:
-        #     pages = []
-        #     for page in pdf.pages:
-        #         text = page.extract_text()
-        #         if text:
-        #             pages.append(Document(page_content=text, metadata={"page": page.page_number, "source": file_path}))
-        #     return pages
-    else:
-        raise ValueError("Unsupported file format. Only .md and .pdf are supported.")
+def load_documents(directory_path):
+    supported_extensions = ['.md', '.pdf', '.py']
+    documents = []
+
+    for filename in os.listdir(directory_path):
+        file_path = os.path.join(directory_path, filename)
+        if os.path.isfile(file_path) and any(filename.endswith(ext) for ext in supported_extensions):
+            print("Loading file:", file_path)
+            if filename.endswith('.md') or filename.endswith('.py'):
+                with open(file_path, 'r') as file:
+                    content = file.read()
+                    documents.append(Document(page_content=content, metadata={"source": file_path}))
+            elif filename.endswith('.pdf'):
+                pages = extract_and_merge_blocks(file_path)
+                documents.extend(pages)
+    
+    if not documents:
+        raise ValueError("No supported documents found in the directory. Only .md, .pdf, and .py are supported.")
+    
+    return documents
 
 def split_with_overlap(docs, chunk_size=500, chunk_overlap=100):
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
-        separators=["\n\n", "\n", " "],  # Preserve paragraph/code grouping
+        separators=["\n\n", "\n", " ", "```"],  # Preserve paragraph/code grouping and fenced code blocks
     )
     
     split_docs = []
     for doc in docs:
-        chunks = splitter.split_text(doc.page_content)
+        chunks = []
+        current_chunk = ""
+        in_code_block = False
+
+        for line in doc.page_content.splitlines(keepends=True):
+            if line.strip().startswith("```"):
+                in_code_block = not in_code_block
+
+            if in_code_block:
+                current_chunk += line
+            else:
+                if len(current_chunk) + len(line) > chunk_size:
+                    chunks.append(current_chunk)
+                    current_chunk = line
+                else:
+                    current_chunk += line
+
+        if current_chunk:
+            chunks.append(current_chunk)
+
         for chunk in chunks:
             split_docs.append(Document(
                 page_content=chunk,
