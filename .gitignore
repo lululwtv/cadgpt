@@ -2,4 +2,4 @@ result.ipynb
 *.ipynb
 venv/
 query.txt
-chroma
+chroma/
