@@ -39,22 +39,50 @@ def main():
     pages = load_documents(FILE_PATH)
     
     # Split documents into code and descriptions
-    code_chunks, desc_chunks = split_documents(pages)
+    split_docs = split_with_overlap(pages)
     
     # Add to Chroma
-    add_to_chroma(code_chunks, CHROMA_COLLECTION_CODE)
-    add_to_chroma(desc_chunks, CHROMA_COLLECTION_DESC)
+    add_to_chroma(split_docs, CHROMA_COLLECTION_DESC)
 
-def extract_text_with_pymupdf(file_path):
-    doc = fitz.open(file_path)  # Open the PDF
-    pages = []
+def extract_and_merge_blocks(file_path):
+    doc = fitz.open(file_path)
+    merged_chunks = []
+    buffer = ""  # Store temporary text for merging
+    metadata = {}
 
     for page_num in range(len(doc)):
-        text = doc[page_num].get_text("text")  # Extract text preserving layout
-        if text:
-            pages.append(Document(page_content=text, metadata={"page": page_num + 1, "source": file_path}))
+        blocks = doc[page_num].get_text("blocks")  # Extract structured text blocks
+        
+        for block in blocks:
+            text = block[4].strip()  # Extract text content
+            metadata = {"page": page_num + 1, "source": file_path}
 
-    return pages
+            if is_code_block(text):  
+                # Merge buffer (previous text) with code
+                if buffer:
+                    merged_chunks.append(Document(
+                        page_content=buffer + "\n\n" + text,  # Merge description with code
+                        metadata=metadata
+                    ))
+                    buffer = ""  # Reset buffer
+                else:
+                    merged_chunks.append(Document(page_content=text, metadata=metadata))
+            else:
+                # Store description text in buffer for potential merging
+                if buffer:
+                    buffer += "\n\n" + text
+                else:
+                    buffer = text
+    
+    # Add remaining buffer content if it wasn't merged
+    if buffer:
+        merged_chunks.append(Document(page_content=buffer, metadata=metadata))
+
+    return merged_chunks
+
+def is_code_block(text):
+    """Detects if a text block is a code block (fenced or indented)."""
+    return bool(re.match(r"(?s)(```.*?```|(?:^\s{4}.*(?:\n|\r))+)", text))
 
 def load_documents(file_path):
     file_path = file_path.strip("'\"")
@@ -64,7 +92,7 @@ def load_documents(file_path):
             content = file.read()
             return [Document(page_content=content, metadata={"source": file_path})]
     elif file_path.endswith('.pdf'):
-        pages = extract_text_with_pymupdf(file_path)
+        pages = extract_and_merge_blocks(file_path)
         return pages
         # with pdfplumber.open(file_path) as pdf:
         #     pages = []
@@ -76,33 +104,23 @@ def load_documents(file_path):
     else:
         raise ValueError("Unsupported file format. Only .md and .pdf are supported.")
 
-def split_documents(documents: list[Document]):
-    code_chunks = []
-    desc_chunks = []
+def split_with_overlap(docs, chunk_size=500, chunk_overlap=100):
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        separators=["\n\n", "\n", " "],  # Preserve paragraph/code grouping
+    )
     
-    for doc in documents:
-        text = doc.page_content
-        code_blocks = extract_code_blocks(text)
-        
-        # Split descriptions
-        desc_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=500,
-            chunk_overlap=200,
-            add_start_index=True,
-        )
-        desc_chunks.extend(desc_splitter.split_documents([doc]))
-        
-        # Split code blocks
-        for block in code_blocks:
-            code_doc = Document(page_content=block, metadata=doc.metadata)
-            code_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=1000,
-                chunk_overlap=500,
-                add_start_index=True,
-            )
-            code_chunks.extend(code_splitter.split_documents([code_doc]))
+    split_docs = []
+    for doc in docs:
+        chunks = splitter.split_text(doc.page_content)
+        for chunk in chunks:
+            split_docs.append(Document(
+                page_content=chunk,
+                metadata=doc.metadata  # Retain metadata
+            ))
     
-    return code_chunks, desc_chunks
+    return split_docs
 
 def extract_code_blocks(text):
     code_blocks = []

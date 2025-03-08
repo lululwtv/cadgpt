@@ -63,7 +63,8 @@ logging.basicConfig(level=logging.INFO)
 
 def main():
     query_text = """
-    produce me a simple hexagonal tube that is 5cm long and 5cm in radius.
+    produce me a simple hexagonal tube that is 2cm long and 5cm in radius. 
+    remove a hole in the middle, 1cm in radius through the tube.
     """
     query_rag(query_text)
 
@@ -144,15 +145,13 @@ def query_rag(query_text: str):
         code_response_py = code_response.replace("```python","").replace("```","").strip()
         with open(notebook_filename, "r") as f:
                     nb = nbf.read(f, as_version=4)
-        new_code = "###"+query_text.replace("\n","")+"\n"+code_response_py+"\n\ndisplay(result)"
+        new_code = "###"+query_text.replace("\n","## ")+"\n"+code_response_py+"\n\ndisplay(result)"
         new_code_cell = nbf.v4.new_code_cell(new_code)
         if "id" in new_code_cell:
             del new_code_cell["id"]
         nb.cells.append(new_code_cell)
         with open(notebook_filename, "w") as f:
             nbf.write(nb, f)
-
-
 
     except Exception as e:
         logging.error(f"An error occurred: {e}")

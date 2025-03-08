@@ -12,4 +12,4 @@ collection = persistent_client.get_or_create_collection(CHROMA_COLLECTION)
 documents = collection.get()
 
 # include=["documents", "embeddings", "metadatas", "ids"]
-print(documents["ids"])
+print(documents["metadatas"])

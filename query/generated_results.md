@@ -62,3 +62,30 @@ result = (
 
 display(result)
 ```
+
+##    produce me a simple hexagonal tube that is 5cm long and 5cm in radius. remove a hole in the middle, 2cm in radius through the tube.
+```
+import cadquery as cq
+radius = 5
+tube_length = 5
+hole_radius = 2
+result = cq.Workplane("XY").polygon(6, radius).extrude(tube_length)
+result = result.faces(">Z").workplane().circle(hole_radius).cutThruAll()
+
+display(result)
+```
+
+## produce me a simple hexagonal tube that is 2cm long and 5cm in radius. 
+## remove a hole in the middle, 1cm in radius through the tube.
+```
+import cadquery as cq
+
+radius = 5
+length = 2
+hole_radius = 1
+
+result = cq.Workplane("XY").polygon(6, radius).extrude(length)
+result = result.faces("<Z").workplane().circle(hole_radius).cutThruAll()
+
+display(result)
+```
