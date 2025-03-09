@@ -9,7 +9,7 @@ import chromadb
 from embeddings import get_embedding_function
 from dotenv import load_dotenv
 import re
-import fitz
+import pymupdf as fitz
 
 load_dotenv()
 
