@@ -13,6 +13,12 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import create_react_agent
 
+from pprint import pprint
+
+from langchain_community.document_loaders.generic import GenericLoader
+from langchain_community.document_loaders.parsers import LanguageParser
+from langchain_text_splitters import Language
+
 from langchain_chroma import Chroma
 import chromadb
 from langchain.prompts import ChatPromptTemplate
@@ -70,9 +76,9 @@ OpenAI.api_key = OPENAI_API_KEY
 # Define a reusable model creator function
 def get_openai_model(temperature=0.2):
     return ChatOpenAI(
-        model="gpt-4",  # Or "gpt-3.5-turbo" for faster responses
-        temperature=temperature,
-        openai_api_key=os.getenv('OPENAI_API_KEY')
+        model="o3-mini",  # Or "gpt-3.5-turbo" for faster responses
+        openai_api_key=os.getenv('OPENAI_API_KEY'),
+        reasoning_effort="medium",
     )
 
 class RetrieveContext(Node):
@@ -91,7 +97,7 @@ class RetrieveContext(Node):
         )
 
         # When performing similarity search, pass the query as a string
-        results = vector_store.similarity_search_with_score(query, k=3)
+        results = vector_store.similarity_search_with_score(query, k=5)
         return sorted(results, key=lambda x: x[1], reverse=True)
     
     def post(self, shared, prep_res, exec_res):
@@ -276,8 +282,15 @@ def query_rag(query_text: str):
 
 def main():
     query_text = """
-    Create a hexagonal nut with a 1/2 inch diameter and 1/4 inch height.
-    Add a 1/8 inch hole in the center of the nut, with a thread depth of 1/16 inch.
+    Write a Python script using CadQuery to create a cylindrical tube with hexagonal holes around its surface. The script should:
+        - Create a base cylinder of diameter 10 inches and height 20 inches
+        - Generate hexagon patterns of side length 1.5 inches
+        - Project these patterns onto the curved surface of the cylinder
+        - Make holes through the cylinder wall using these projected patterns
+        - Make a hollow center with the tube walls 1 inch thick
+        - Include proper imports and documentation
+        - Handle the proper rotation and positioning of the holes around the cylinder's circumference
+        - Ensure the final object is a valid solid with an even distribution of holes
     """
     query_rag(query_text)
 

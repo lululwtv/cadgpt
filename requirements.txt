@@ -30,13 +30,13 @@ Deprecated==1.2.18
 distro==1.9.0
 docstring_parser==0.16
 durationpy==0.9
+esprima==4.0.1
 etelemetry==0.3.1
 exceptiongroup @ file:///home/conda/feedstock_root/build_artifacts/exceptiongroup_1733208806608/work
 executing @ file:///home/conda/feedstock_root/build_artifacts/executing_1733569351617/work
 fastapi==0.115.11
 fastjsonschema==2.21.1
 filelock==3.17.0
-fitz==0.0.1.dev2
 flatbuffers==25.2.10
 frozenlist==1.5.0
 fsspec==2025.3.0
@@ -147,6 +147,7 @@ pydantic-settings==2.8.1
 pydantic_core==2.27.2
 pydot==3.0.4
 Pygments @ file:///home/conda/feedstock_root/build_artifacts/pygments_1736243443484/work
+PyMuPDF==1.25.3
 pyparsing==3.2.1
 PyPika==0.48.9
 pyproject_hooks==1.2.0
@@ -183,6 +184,8 @@ tornado @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_0a
 tqdm==4.67.1
 traitlets @ file:///home/conda/feedstock_root/build_artifacts/traitlets_1733367359838/work
 traits==7.0.2
+tree-sitter==0.24.0
+tree-sitter-languages==1.10.2
 typer==0.15.2
 typing-inspect==0.9.0
 typing_extensions @ file:///home/conda/feedstock_root/build_artifacts/typing_extensions_1733188668063/work

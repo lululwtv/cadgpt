@@ -11,6 +11,12 @@ from dotenv import load_dotenv
 import re
 import pymupdf as fitz
 
+from pprint import pprint
+
+from langchain_community.document_loaders.generic import GenericLoader
+from langchain_community.document_loaders.parsers import LanguageParser
+from langchain_text_splitters import Language
+
 load_dotenv()
 
 
@@ -85,7 +91,16 @@ def is_code_block(text):
     return bool(re.match(r"(?s)(```.*?```|(?:^\s{4}.*(?:\n|\r))+)", text))
 
 def load_documents(directory_path):
-    supported_extensions = ['.md', '.pdf', '.py']
+    def load_language_documents(directory):
+        loader = GenericLoader.from_filesystem(
+                directory,
+                glob='*',
+                suffixes=['.py'],
+                parser=LanguageParser(Language.PYTHON)
+            )
+        return loader.load()
+
+    supported_extensions = ['.md', '.pdf']
     documents = []
 
     for root, dirs, files in os.walk(directory_path):
@@ -93,13 +108,16 @@ def load_documents(directory_path):
             file_path = os.path.join(root, filename)
             if os.path.isfile(file_path) and any(filename.endswith(ext) for ext in supported_extensions):
                 print("Loading file:", file_path)
-                if filename.endswith('.md') or filename.endswith('.py'):
+                if filename.endswith('.md'):
                     with open(file_path, 'r') as file:
                         content = file.read()
                         documents.append(Document(page_content=content, metadata={"source": file_path}))
                 elif filename.endswith('.pdf'):
                     pages = extract_and_merge_blocks(file_path)
                     documents.extend(pages)
+    
+    documents.extend(load_language_documents(directory_path + "cadquery-contrib/"))
+    documents.extend(load_language_documents(directory_path + "cq-warehouse/"))
     
     if not documents:
         raise ValueError("No supported documents found in the directory. Only .md, .pdf, and .py are supported.")
