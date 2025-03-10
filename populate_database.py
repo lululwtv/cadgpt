@@ -11,8 +11,6 @@ from dotenv import load_dotenv
 import re
 import pymupdf as fitz
 
-from pprint import pprint
-
 from langchain_community.document_loaders.generic import GenericLoader
 from langchain_community.document_loaders.parsers import LanguageParser
 from langchain_text_splitters import Language
