@@ -115,9 +115,7 @@ class RetrieveContext(Node):
         Request: Create a cylinder with a 1-inch diameter and 2-inch height.
         Output:
         import cadquery as cq
-        result = cq.Workplane("XY").circle(0.5).extrude(2)
-        Instructions: To create a cylinder, you have to ensure that you create a circle on the XY plane, 
-            then extrude it to the desired height. There is no cylinder() method in CadQuery, so you have to create a circle and extrude it.
+        result = cq.Workplane("XY").cylinder("2", 0.5, centered=(True, True, False))
         ---
 
         Example 2:
@@ -282,15 +280,15 @@ def query_rag(query_text: str):
 
 def main():
     query_text = """
-    Write a Python script using CadQuery to create a cylindrical tube with hexagonal holes around its surface. The script should:
-        - Create a base cylinder of diameter 10 inches and height 20 inches
-        - Generate hexagon patterns of side length 1.5 inches
+    Write a Python script using CadQuery to create a cylinder with hexagonal holes around its surface. The script should:
+        - Create a base cylinder of diameter 5 inches and height 15 inches
+        - Generate hexagon patterns of side length 1 inch
         - Project these patterns onto the curved surface of the cylinder
         - Make holes through the cylinder wall using these projected patterns
-        - Make a hollow center with the tube walls 1 inch thick
         - Include proper imports and documentation
         - Handle the proper rotation and positioning of the holes around the cylinder's circumference
         - Ensure the final object is a valid solid with an even distribution of holes
+        - Ensure that the cylinder is a tube with a wall thickness of 0.3 inches and hollow in the center
     """
     query_rag(query_text)
 
