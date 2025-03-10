@@ -182,7 +182,7 @@ class SaveToNotebook(Node):
                 # If file exists but is corrupted/empty, create a new notebook
                 nb = nbf.v4.new_notebook()
         
-        new_code = "###"+query_text.replace("\n","\n##")+"\n"+code_response_py+"\n\ndisplay(result)"
+        new_code = "###"+query_text.replace("\n","\n##")+"\n"+code_response_py
         new_code_cell = nbf.v4.new_code_cell(new_code)
         if "id" in new_code_cell:
             del new_code_cell["id"]
@@ -280,15 +280,18 @@ def query_rag(query_text: str):
 
 def main():
     query_text = """
-    Write a Python script using CadQuery to create a cylinder with hexagonal holes around its surface. The script should:
-        - Create a base cylinder of diameter 5 inches and height 15 inches
-        - Generate hexagon patterns of side length 1 inch
-        - Project these patterns onto the curved surface of the cylinder
-        - Make holes through the cylinder wall using these projected patterns
-        - Include proper imports and documentation
-        - Handle the proper rotation and positioning of the holes around the cylinder's circumference
-        - Ensure the final object is a valid solid with an even distribution of holes
+    Write a Python script using CadQuery to create a cylinder with another cylinder twisted to a semicircle and attached to the first cylinder to resemble a parametric mug. The script should:
+        - Create a base cylinder of diameter 7 inches and height of 7 inches
         - Ensure that the cylinder is a tube with a wall thickness of 0.3 inches and hollow in the center
+        - Generate a base plate of 1/2 inch thickness and of same diameter as the cylinder should be attached to the base of the cylinder
+        - Generate a another cylinder of diameter 1 inch and a length of 3 inches.
+        - Ensure that the cyclinder is bent from start to end with a bend radius of 1.5 inches creating a open semicircle
+        - Ensure that the both ends of the bent cylinder is connected to the cylinder's curved exterior surface sitting flush and smoothly at two points aligning with one above another, and centered vertically along the first cylinder's height.
+        - Include proper imports and documentation
+        - Use proper methods available in documentation and do not make your own.
+        - Ensure the final object is a valid solid
+        - Ensure that the output is displayed with display(item) instead of show_object(item), "item" being the variable name of the final object
+
     """
     query_rag(query_text)
 
