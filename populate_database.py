@@ -100,6 +100,7 @@ def load_documents(directory_path):
 
     supported_extensions = ['.md', '.pdf']
     documents = []
+    code = [] # For future use, to store code blocks separately from descriptions
 
     for root, dirs, files in os.walk(directory_path):
         for filename in files:
@@ -116,6 +117,7 @@ def load_documents(directory_path):
     
     documents.extend(load_language_documents(directory_path + "cadquery-contrib/"))
     documents.extend(load_language_documents(directory_path + "cq-warehouse/"))
+    documents.extend(load_language_documents("./query"))
     
     if not documents:
         raise ValueError("No supported documents found in the directory. Only .md, .pdf, and .py are supported.")

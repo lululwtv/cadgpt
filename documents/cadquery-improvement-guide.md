@@ -156,3 +156,152 @@
    - Check `.isValid()` on complex objects
    - Add assertions to verify expected dimensions or properties
    - Include debug visualization during development
+
+
+## Sweep Operation Troubleshooting
+
+### "NCollection_Sequence::ChangeValue" Error in Sweep Operations
+
+This error typically occurs during complex sweep operations, especially when creating curved features like mug handles. It indicates that the OpenCascade geometry engine (which underlies CadQuery) couldn't properly create the intended shape.
+
+#### Common Causes and Solutions:
+
+1. **Path and Profile Incompatibility**
+   - **Problem**: Workplane orientations for the profile and path are incompatible
+   - **Solution**: Ensure the profile's workplane is perpendicular to the start of the path
+   ```python
+   # Correct alignment of profile and path planes
+   handle_profile = cq.Workplane("YZ").circle(radius)
+   handle_path = cq.Workplane("XZ").threePointArc(...)
+   ```
+
+2. **Complex Path Geometry**
+   - **Problem**: Path contains complex curves that are difficult to sweep along
+   - **Solution**: Simplify the path or use an alternative construction method
+   ```python
+   # Alternative approach using revolve instead of sweep for curved handles
+   handle = (
+       cq.Workplane("YZ", origin=(center_x, 0, center_z))
+          .circle(radius)
+          .revolve(angle, (0, 0, 0), (0, 1, 0))
+   )
+   ```
+
+3. **Improper Arc Construction**
+   - **Problem**: The arc's control point doesn't create a valid, smooth curve
+   - **Solution**: Calculate control points more precisely for arcs
+   ```python
+   # For a semicircular arc with radius R
+   midpoint = (start_x - radius, (start_y + end_y) / 2)
+   ```
+
+4. **Coordinate System Issues**
+   - **Problem**: Using mixed coordinate systems between the profile and path
+   - **Solution**: Maintain consistent coordinate systems or explicitly transform between them
+   ```python
+   # Ensure consistent coordinate representation by working in the same principal planes
+   # Use XZ for vertical arcs, XY for horizontal arcs, etc.
+   ```
+
+#### Best Practices for Reliable Sweep Operations:
+
+1. Use simpler construction methods (revolve, loft) when appropriate
+2. Test sweep operations with basic profiles before attempting complex ones
+3. Ensure path and profile are properly oriented relative to each other
+4. Verify that the path is a valid wire object before sweeping
+5. Break complex shapes into multiple simpler sweep operations
+
+#### Example: Robust Handle Creation
+
+```python
+# More robust approach to creating a curved handle
+def create_handle(body_radius, attachment_height, handle_radius=0.5):
+    # Calculate handle geometry
+    center_offset = 1.5  # Distance of handle center from body
+    handle_center = (-body_radius - center_offset, 0)
+    
+    # Create handle using revolve (more stable than sweep)
+    handle = (
+        cq.Workplane("YZ", origin=(handle_center[0], 0, attachment_height))
+           .circle(handle_radius)
+           .revolve(180, (0, 0, 0), (0, 1, 0))  # 180° around Y axis
+    )
+    
+    # If a sweep is necessary, ensure proper workplane alignment
+    # handle_profile = cq.Workplane("YZ").circle(handle_radius)
+    # handle_path = cq.Workplane("XZ").threePointArc(...)
+    # handle = handle_profile.sweep(handle_path)
+    
+    return handle
+```
+
+## Generating Handles and Curved Surfaces Attached to Other Bodies
+
+### 1. Ensuring Proper Attachment to the Main Body
+- The handle's **endpoints** should be placed **precisely on the curved surface** of the main body.
+- Use **parametric calculations** to determine attachment coordinates, ensuring **smooth continuity**.
+- The **handle profile** should start in a **workplane perpendicular** to the main body at the correct position.
+
+### 2. Creating a Handle with a Curved Sweep
+#### **Basic Approach (Sweep)**
+
+```python
+# Define attachment points along the outer surface of a cylindrical mug
+outer_radius = 3.5  # Example mug outer radius
+attachment_height_top = 5.0
+attachment_height_bottom = 2.0
+
+# Define the arc midpoint for a semicircular bend
+arc_midpoint = (outer_radius + 1.5, 0, (attachment_height_top + attachment_height_bottom) / 2.0)
+
+# Create a curved path using three-point arc in the XZ plane
+handle_path = (
+    cq.Workplane("XZ")
+    .moveTo(outer_radius, attachment_height_top)
+    .threePointArc(arc_midpoint, (outer_radius, attachment_height_bottom))
+    .val()
+)
+
+# Create the circular handle profile at the start of the arc
+handle_profile = cq.Workplane("XY", origin=(outer_radius, 0, attachment_height_top)).circle(0.5)
+
+# Sweep the profile along the arc to create the handle
+handle = handle_profile.sweep(handle_path)
+```
+Advantages: Uses a smooth arc to create a flush and continuous handle connection.
+
+Common Issues:
+   - Improper workplane orientation: The profile must be created on a workplane perpendicular to the sweep path.
+   - Failed sweep operations: Ensure the arc is correctly defined and the path is a valid wire before sweeping.
+
+### 3. Alternative Approach (Revolve for Stability)
+
+If the sweep operation fails due to path complexity, an alternative is to use revolve:
+```
+def create_handle(body_radius, attachment_height, handle_radius=0.5):
+    center_offset = 1.5  # Distance from body to handle's arc center
+    handle_center = (-body_radius - center_offset, 0)
+
+    # Revolve a circular profile to create a curved handle
+    handle = (
+        cq.Workplane("YZ", origin=(handle_center[0], 0, attachment_height))
+           .circle(handle_radius)
+           .revolve(180, (0, 0, 0), (0, 1, 0))  # Revolve 180° around Y-axis
+    )
+    
+    return handle
+```
+
+Advantages:
+- More stable than a sweep for handles with exact semicircular shapes.
+- Avoids NCollection_Sequence errors caused by complex path sweeps.
+
+### 4. Validating the Handle Attachment
+After creating the handle, merge it with the main body:
+```
+mug = mug_body.union(handle)
+```
+- Verify the handle is properly attached:
+- Check alignment using .translate() or workplane().transformed()
+- Rotate if necessary to adjust the angle of attachment.
+- Ensure endpoints sit flush on the body surface by aligning their positions.
