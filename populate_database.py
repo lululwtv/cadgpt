@@ -117,7 +117,7 @@ def load_documents(directory_path):
     
     documents.extend(load_language_documents(directory_path + "cadquery-contrib/"))
     documents.extend(load_language_documents(directory_path + "cq-warehouse/"))
-    # documents.extend(load_language_documents("./query"))
+    documents.extend(load_language_documents("./query"))
     
     if not documents:
         raise ValueError("No supported documents found in the directory. Only .md, .pdf, and .py are supported.")

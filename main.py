@@ -51,12 +51,11 @@ logging.basicConfig(level=logging.INFO)
 
 # Set up OpenAI API key
 OpenAI.api_key = OPENAI_API_KEY
-# deepseek_client = OpenAI(api_key="DEEPSEEK_API_KEY", base_url="https://api.deepseek.com")
 
 # Define a reusable model creator function
 def get_openai_model(temperature=0.2):
     return ChatOpenAI(
-        model="o3-mini",  # Or "gpt-3.5-turbo" for faster responses
+        model="o3-mini", 
         openai_api_key=os.getenv('OPENAI_API_KEY'),
         reasoning_effort="medium",
     )
@@ -266,7 +265,7 @@ def main():
             - Generate a base plate of 1/2 inch thickness and of same diameter as the cylinder should be attached to the base of the cylinder
             - Generate another cylinder of diameter 1 inch and a length of 3 inches.
             - Ensure that the cylinder is bent from start to end with a bend radius of 1.5 inches creating an open semicircle
-            - Ensure that both ends of the bent cylinder are connected to the cylinder's curved exterior surface sitting flush and smoothly at two points aligning with one above another, and centered vertically along the first cylinder's height.
+            - Ensure that both ends of the bent cylinder are connected to the cylinder's curved exterior surface, creating a handle for the cylinder where the center of the semicircle is aligned with the center of the cylinder
             - Add a three-circle emblem hole from the front of the mug (opposite to the handle):
                 - Create the emblem using one large circle (2 inches diameter) for the base and two smaller circles (1 inch diameter each) for the top elements
                 - Position the smaller circles at the upper portion of the large circle, evenly spaced apart
