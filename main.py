@@ -259,22 +259,7 @@ def query_rag(query_text: str):
 
 def main():
     query_text = """
-    Write a Python script using CadQuery to create a cylinder with another cylinder twisted to a semicircle and attached to the first cylinder to resemble a parametric mug with a three-circle emblem attached to the front. The script should:
-            - Create a base cylinder of diameter 7 inches and height of 7 inches
-            - Ensure that the cylinder is a tube with a wall thickness of 0.3 inches and hollow in the center
-            - Generate a base plate of 1/2 inch thickness and of same diameter as the cylinder should be attached to the base of the cylinder
-            - Generate another cylinder of diameter 1 inch and a length of 3 inches.
-            - Ensure that the cylinder is bent from start to end with a bend radius of 1.5 inches creating an open semicircle
-            - Ensure that both ends of the bent cylinder are connected to the cylinder's curved exterior surface sitting flush and smoothly at two points aligning with one above another, and centered vertically along the first cylinder's height.
-            - Add a three-circle emblem hole from the front of the mug (opposite to the handle):
-                - Create the emblem using one large circle (2 inches diameter) for the base and two smaller circles (1 inch diameter each) for the top elements
-                - Position the smaller circles at the upper portion of the large circle, evenly spaced apart
-                - Ensure the emblem protrudes outward from the mug surface by 0.25 inches
-            - Make the emblem solid and ensure it properly fuses with the mug body
-            - Include proper imports and documentation
-            - Use proper methods available in documentation and do not make your own.
-            - Ensure the final object is a valid solid
-            - Ensure that the output is displayed with display(item) instead of show_object(item), "item" being the variable name of the final object
+Generate a cloud
     """
     query_rag(query_text)
 
